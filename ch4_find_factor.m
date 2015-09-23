@@ -99,39 +99,43 @@ price2earnings = price2earnings (minAccountingLag+1:NumRow);
 [y,x] = keepValidPair(priceReturn, capExpRatio);
 result=ols(y,[x ones(size(x))]);
 disp('Capital Expenditure / Total Asset Ratio');
-result.beta
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 
 [y,x] = keepValidPair(priceReturn, debtRatio);
 result=ols(y,[x ones(size(x))]);
 disp('Debt / Total Asset Ratio');
-result.beta
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 
 [y,x] = keepValidPair(priceReturn, rndRatio);
 result=ols(y,[x ones(size(x))]);
 disp('RND / Total Asset Ratio');
-result.beta
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 
 [y,x] = keepValidPair(priceReturn, roe);
 result=ols(y,[x ones(size(x))]);
 disp('Return on Equity');
-result.beta
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 
 [y,x] = keepValidPair(priceReturn, price2book);
 result=ols(y,[x ones(size(x))]);
 disp('Price to Book Ratio');
-result.beta
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 
 [y,x] = keepValidPair(priceReturn, price2cashFlow);
+[y,x] = keepPositivePair(y,x);
+[y,x] = keepFinitePair(y,x);
 result=ols(y,[x ones(size(x))]);
 disp('Price to Cash Flow');
-result.beta
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 
 [y,x] = keepValidPair(priceReturn, price2dividend);
 result=ols(y,[x ones(size(x))]);
 disp('Price to Dividend');
-result.beta
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 
 [y,x] = keepValidPair(priceReturn, price2earnings);
+[y,x] = keepPositivePair(y,x);
+[y,x] = keepFinitePair(y,x);
 result=ols(y,[x ones(size(x))]);
 disp('Price to Earnings Ratio');
-result.beta
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
