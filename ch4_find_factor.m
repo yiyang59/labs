@@ -4,6 +4,10 @@ clear;
 minAccountingLag = 3; %assume 3 months gap in accounting reports.
 maxAccountingLag = 5; %Cannot carryover for > 5 months.
 
+%Note, penny stocks screws the regression. 
+minPriceUnivers = 5;%filter out penny stocks.
+maxReasonableReturn =1; %filter for unrealistic return due to data error.
+
 %load all data.
 col_seq=1;           col_ticker=2;     col_month=3;  col_pricedate=4; 
 col_pricem=5;        col_acctdate=6;   col_capexq=7; col_cashflowq=8;
@@ -18,6 +22,11 @@ alldata = textscan (fid,'%d%s%d%s%f%s%f%f%f%f%f%f%f%f%f%f',      ...
 fclose(fid);
 
 %%%%%%%%%%%% Data cleaning and preparation
+
+%%Remove Penny stocks, could this caus bias?
+%TBD
+%%Removed Penny stocks.
+
 price = alldata{col_pricem};
 ticker = alldata{col_ticker};
 
@@ -25,13 +34,20 @@ NumRow = length(price);
 
 priceReturn = NaN(NumRow,1);
 for i = 1 : NumRow - 1
-    if (strcmp(ticker(i), ticker(i+1)))
+    if (strcmp(ticker(i), ticker(i+1)) ...
+            && alldata{col_month}(i) + 1 == alldata{col_month}(i+1))
         ret = (price(i+1) - price(i)) / price(i);
     else
         ret = nan;
     end
     priceReturn(i) = ret;
 end
+
+%Filter out unrealistic returns due to price data error.
+priceReturn (find (priceReturn > maxReasonableReturn)) = nan;
+
+%find (priceReturn > 5)
+%error('stop');
 
 %%Fill accounting values, from quarterly to monthly 1->3 months.
 lastAccountingRow = 0;
@@ -100,26 +116,31 @@ price2earnings = price2earnings (minAccountingLag+1:NumRow);
 result=ols(y,[x ones(size(x))]);
 disp('Capital Expenditure / Total Asset Ratio');
 fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
+prt(result);
 
 [y,x] = keepValidPair(priceReturn, debtRatio);
 result=ols(y,[x ones(size(x))]);
 disp('Debt / Total Asset Ratio');
 fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
+prt(result);
 
 [y,x] = keepValidPair(priceReturn, rndRatio);
 result=ols(y,[x ones(size(x))]);
 disp('RND / Total Asset Ratio');
 fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
+prt(result);
 
 [y,x] = keepValidPair(priceReturn, roe);
 result=ols(y,[x ones(size(x))]);
 disp('Return on Equity');
 fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
+prt(result);
 
 [y,x] = keepValidPair(priceReturn, price2book);
 result=ols(y,[x ones(size(x))]);
 disp('Price to Book Ratio');
 fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
+prt(result);
 
 [y,x] = keepValidPair(priceReturn, price2cashFlow);
 [y,x] = keepPositivePair(y,x);
@@ -127,11 +148,7 @@ fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 result=ols(y,[x ones(size(x))]);
 disp('Price to Cash Flow');
 fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
-
-[y,x] = keepValidPair(priceReturn, price2dividend);
-result=ols(y,[x ones(size(x))]);
-disp('Price to Dividend');
-fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
+prt(result);
 
 [y,x] = keepValidPair(priceReturn, price2earnings);
 [y,x] = keepPositivePair(y,x);
@@ -139,3 +156,27 @@ fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
 result=ols(y,[x ones(size(x))]);
 disp('Price to Earnings Ratio');
 fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
+prt(result);
+
+[y,x] = keepValidPair(priceReturn, price2dividend);
+result=ols(y,[x ones(size(x))]);
+disp('Price to Dividend');
+fprintf('r = %f + %f * factor\n', result.beta(2), result.beta(1));
+prt(result);
+
+%%%%%%%%Multivariate Regression on ROE, RND, Debt ratio. 
+%remove nan
+all = [priceReturn roe rndRatio debtRatio];
+cleanAll = keepValidRow(all);
+ 
+y = cleanAll(:,1);
+x1 = cleanAll(:,2);
+x2 = cleanAll(:,3);
+x3 = cleanAll(:,4);
+
+
+result=ols(y,[x1 x2 x3 ones(size(x1))]);
+disp('Multi variable regression');
+fprintf('r = %f + %f * roe + %f * rnd + %f * debt\n', ... 
+    result.beta(4), result.beta(1), result.beta(2), result.beta(3));
+prt(result);
