@@ -5,6 +5,7 @@ inputFile = 'D:/matlab_data/qepm/ch5/Data_Ch5.csv';
 fid = fopen(inputFile);
 allData = textscan(fid,'%f%s%f%f%f%f%f%f%f%f%f%f%f%f', ...
     'Headerlines',1,'Delimiter',',','TreatAsEmpty','NA');
+fclose(fid);
 
 col_seq = 1; col_ticker = 2; col_capexratio = 3; col_debt2equity = 4;
 col_price2book = 5;	col_price2cashflow = 6; col_price2dividend = 7;
